@@ -1,0 +1,75 @@
+pipeline:
+  name: nestjs-ci-pipeline
+  identifier: nestjscipipeline
+  projectIdentifier: nodejspipeline
+  orgIdentifier: default
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: git_new
+        repoName: nestjs-ci-pipeline
+        build: <+input>
+  stages:
+    - stage:
+        name: Build and test
+        identifier: Build_and_test
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          caching:
+            enabled: true
+            override: true
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: gkeconnector
+              namespace: harness-delegate-ng
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  type: GitClone
+                  name: Clone Code
+                  identifier: Clone_Code
+                  spec:
+                    connectorRef: git_new
+                    repoName: nestjs-ci-pipeline
+                    build:
+                      type: branch
+                      spec:
+                        branch: main
+                  description: This step is to clone the code
+              - step:
+                  type: Run
+                  name: Run_tests
+                  identifier: Run_tests
+                  spec:
+                    connectorRef: Dockerconnector
+                    image: node:18-alpine
+                    shell: Sh
+                    command: |-
+                      echo "Installing dependencies..."
+                      npm install
+
+                      echo "Running Lint..."
+                      npm run lint
+
+                      echo "Running Unit Tests..."
+                      npm run test
+
+                      echo "Checking Code Coverage..."
+                      npm run test:cov
+                  description: Run lint, test, and coverage
+              - step:
+                  type: BuildAndPushDockerRegistry
+                  name: Build and Push docker image
+                  identifier: Build_and_Push_docker_image
+                  spec:
+                    connectorRef: Dockerconnector
+                    repo: prajwaltelkar14/nestjs-microservice
+                    tags:
+                      - <+pipeline.sequenceId>
