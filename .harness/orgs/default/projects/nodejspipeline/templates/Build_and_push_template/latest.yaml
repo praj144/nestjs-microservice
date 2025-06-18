@@ -1,0 +1,15 @@
+template:
+  name: Build and push template
+  type: Step
+  projectIdentifier: nodejspipeline
+  orgIdentifier: default
+  spec:
+    type: BuildAndPushDockerRegistry
+    spec:
+      connectorRef: Dockerconnector
+      repo: docker.io/prajwaltelkar14/nestjs-microservice
+      tags:
+        - <+pipeline.sequenceId>
+      caching: false
+  identifier: Build_and_push_template
+  versionLabel: latest
